@@ -8,12 +8,26 @@ const router = express.Router();
 
 // Register User
 router.get('/', async (req, res) => {
-    try {
-      const [rows] = await pool.query('SELECT * FROM bookings');
-      res.json(rows);
-    } catch (err) {
-      res.status(500).send('Error fetching bookings');
-    }
+  try {
+    const [bookings] = await db.query(`SELECT * FROM bookings`);
+
+    const today = moment().startOf('day');
+    const recurringBookings = bookings.filter((booking) => {
+      if (booking.recurrence === 'none') return true;
+
+      if (booking.recurrence === 'daily') return true;
+
+      if (booking.recurrence === 'weekly') {
+        const bookingDay = moment(booking.start_time).format('dddd');
+        return bookingDay === today.format('dddd');
+      }
+      return false;
+    });
+
+    res.json(recurringBookings);
+  } catch (error) {
+    res.status(500).send('Error fetching bookings');
+  }
   });
 // Calculate booking price dynamically
 const calculateBookingPrice = async (spaceId, startTime, endTime) => {
@@ -29,13 +43,13 @@ const calculateBookingPrice = async (spaceId, startTime, endTime) => {
     return totalPrice;
   };
   router.post('/request', async (req, res) => {
-    const { user_id, space_id, start_time, end_time, purpose } = req.body;
+    const { user_id, space_id, start_time, end_time, purpose, recurrence, recurrence_day } = req.body;
   
     try {
       await pool.query(
-        `INSERT INTO bookings (user_id, space_id, start_time, end_time, purpose, status) 
-         VALUES (?, ?, ?, ?, ?, 'requested')`,
-        [user_id, space_id, start_time, end_time, purpose]
+        `INSERT INTO bookings (user_id, space_id, start_time, end_time, purpose, recurrence, recurrence_day, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'requested')`,
+        [user_id, space_id, start_time, end_time, purpose, recurrence, recurrence_day]
       );
   
       res.send('Booking request submitted successfully');

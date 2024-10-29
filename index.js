@@ -30,6 +30,7 @@ app.use('/admin', adminRoutes);
 app.use('/booking',bookingRoutes);
 app.use('/spaces',spacesRoutes);
 app.use('/user-profiles', userProfileRoutes);
+app.use(express.static('public'));
 // app.use('/api', apiRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
